@@ -3,14 +3,14 @@ package com.mycompany.motorphpayrollsystem;
 import java.io.*;
 import java.util.*;
 
-// Employee class outside of MotorPHPayrollSystem
+// Employee class defined outside the main class for better modularity
 class Employee {
-    int employeeNumber;
-    String name;
-    int hoursWorked;
-    double hourlyRate;
-    double grossSalary;
-    double netSalary;
+    private int employeeNumber;
+    private String name;
+    private int hoursWorked;
+    private double hourlyRate;
+    private double grossSalary;
+    private double netSalary;
 
     // Constructor
     public Employee(int employeeNumber, String name, int hoursWorked, double hourlyRate) {
@@ -23,59 +23,89 @@ class Employee {
     }
 
     // Calculate Gross Salary
-    public double calculateGrossSalary() {
+    private double calculateGrossSalary() {
         return hoursWorked * hourlyRate;
     }
 
     // Calculate Government Deductions and Net Salary
-    public double calculateNetSalary() {
+    private double calculateNetSalary() {
         double sss = grossSalary * 0.045;
         double pagIbig = grossSalary * 0.02;
         double philHealth = grossSalary * 0.03;
         double incomeTax = grossSalary * 0.10;
-       
+
         double totalDeductions = sss + pagIbig + philHealth + incomeTax;
         return grossSalary - totalDeductions;
     }
 
-    // Display Employee Details
+    // Improved display method using StringBuilder for better performance
     public void displayEmployeeDetails() {
-        System.out.println("Employee Number: " + employeeNumber);
-        System.out.println("Name: " + name);
-        System.out.println("Hours Worked: " + hoursWorked);
-        System.out.println("Hourly Rate: PHP " + hourlyRate);
-        System.out.println("Gross Salary: PHP " + grossSalary);
-        System.out.println("Net Salary: PHP " + netSalary);
-        System.out.println("------------------------------");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Employee Number: ").append(employeeNumber).append("\n");
+        sb.append("Name: ").append(name).append("\n");
+        sb.append("Hours Worked: ").append(hoursWorked).append("\n");
+        sb.append("Hourly Rate: PHP ").append(String.format("%.2f", hourlyRate)).append("\n");
+        sb.append("Gross Salary: PHP ").append(String.format("%.2f", grossSalary)).append("\n");
+        sb.append("Net Salary: PHP ").append(String.format("%.2f", netSalary)).append("\n");
+        sb.append("------------------------------");
+        System.out.println(sb.toString());
     }
 }
 
-// Main class for payroll system
+// Main class
 public class MotorPHPayrollSystem {
 
+    // File path made configurable (improvement for flexibility)
+    private static final String FILE_PATH = "employees.txt";
+
     public static void main(String[] args) {
-        List<Employee> employees = new ArrayList<>();
-       
-        // Read employee details from a file
-        try (BufferedReader br = new BufferedReader(new FileReader("employees.txt"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
-                int employeeNumber = Integer.parseInt(data[0]);
-                String name = data[1];
-                int hoursWorked = Integer.parseInt(data[2]);
-                double hourlyRate = Double.parseDouble(data[3]);
-               
-                employees.add(new Employee(employeeNumber, name, hoursWorked, hourlyRate));
+        List<Employee> employees = loadEmployeesFromFile(FILE_PATH);
+
+        if (employees.isEmpty()) {
+            System.out.println("No employee data found.");
+        } else {
+            System.out.println("=== Employee Payroll Details ===");
+            for (Employee emp : employees) {
+                emp.displayEmployeeDetails();
             }
+        }
+    }
+
+    // Refactored file reading into a separate method for better structure and reusability
+    private static List<Employee> loadEmployeesFromFile(String filename) {
+        List<Employee> employees = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            String line;
+            int lineNumber = 0;
+
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                String[] data = line.split(",");
+
+                // Added validation to skip lines with incorrect format
+                if (data.length != 4) {
+                    System.out.println("Skipping invalid data at line " + lineNumber);
+                    continue;
+                }
+
+                try {
+                    int employeeNumber = Integer.parseInt(data[0].trim());
+                    String name = data[1].trim();
+                    int hoursWorked = Integer.parseInt(data[2].trim());
+                    double hourlyRate = Double.parseDouble(data[3].trim());
+
+                    employees.add(new Employee(employeeNumber, name, hoursWorked, hourlyRate));
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid number format at line " + lineNumber + ": " + e.getMessage());
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("Employee file not found: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("Error reading file: " + e.getMessage());
         }
-       
-        // Display employee details
-        for (Employee emp : employees) {
-            emp.displayEmployeeDetails();
-        }
+
+        return employees;
     }
 }
-
